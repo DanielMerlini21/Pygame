@@ -1,0 +1,5 @@
+COMPETITIVE CODING CHALLENGES:
+https://www.geeksforgeeks.org/competitive-programming-a-complete-guide/?ref=shm
+
+GUI PYGAME
+https://www.geeksforgeeks.org/competitive-programming-a-complete-guide/?ref=shm
