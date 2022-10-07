@@ -1,5 +1,5 @@
 import os
-#from MazeGenerator import *
+from MazeGenerator import *
 
 def load_images():
     files = os.listdir()
