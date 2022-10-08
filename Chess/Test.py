@@ -26,9 +26,26 @@ if x != None:
     rect = (BOARD_POS[0] + x * TILESIZE, BOARD_POS[1] + y * TILESIZE, TILESIZE, TILESIZE)
     pygame.draw.rect(screen, (255, 0, 0, 50), rect, 2)
 """
+"""
+from itertools import product
 
+print(product())
+
+def knight_moves(position):
+    x, y = position
+    li = []
+    moves = list(product([x-1, x+1],[y-2, y+2])) + list(product([x-2,x+2],[y-1,y+1]))
+    print(f"a {x-1, x+1} b {y-2, y + 2} a1 {x - 2 , x + 2} b1 {y - 1, y + 1}")
+    print(f"product1 {list(product([x-1, x+1],[y-2, y+2]))} product2 {list(product([x-2,x+2],[y-1,y+1]))}")
+    for x, y in moves:
+        if 0 <= x < 8 and 0 <= y < 8:
+            li.append([x, y])
+    return li
+
+print(knight_moves((2, 2)))
 #print(11//5)
 #print((1,2)[0])
+"""
 """
 #a = [2, 3, 4]
 
@@ -89,8 +106,16 @@ print(a[1::])
 #a = []
 #for x in a:
 #    print("whats up")
-
+"""
 a = []
 a[0]
 if a[0] < 1 < a[-1]:
     print("WHAT")
+"""
+
+a = []
+b = [[4, 6]]
+d = b
+c = d
+print(c)
+a,b = c

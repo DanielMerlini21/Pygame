@@ -1,8 +1,12 @@
+#  use a bitboard as the board
+#  https://towardsdatascience.com/dissecting-stockfish-part-1-in-depth-look-at-a-chess-engine-7fddd1d83579
+
 # imports the modules
 
 import pygame
 import os
 import copy
+from itertools import product
 
 # game settings
 
@@ -27,12 +31,15 @@ FPS = 60
 WIDTH_IN_TILES = int(WIDTH / TILE_SIZE)
 HEIGHT_IN_TILES = int(HEIGHT / TILE_SIZE)
 
+# pieces and values
+values = {"Queen": 9, "Rook": 5, "Bishop": 3, "Knight": 3, "Pawn": 1}
+
 # variables
 board_pieces_names = [["BRook", "BKnight", "BBishop", "BQueen", "BKing", "BBishop", "BKnight", "BRook"],
                       ["BPawn", "BPawn", "BPawn", "BPawn", "BPawn", "BPawn", "BPawn", "BPawn"],
                       [" ", " ", " ", " ", " ", " ", " ", " "],
-                      ["BRook", " ", "BRook", " ", "BRook", " ", " ", " "],
-                      [" ", " ", " ", "BKing", "WBishop", " ", " ", " "],
+                      [" ", " ", " ", " ", " ", " ", " ", " "],
+                      [" ", " ", " ", " ", " ", " ", " ", " "],
                       [" ", " ", " ", " ", " ", " ", " ", " "],
                       ["WPawn", "WPawn", "WPawn", "WPawn", "WPawn", "WPawn", "WPawn", "WPawn"],
                       ["WRook", "WKnight", "WBishop", "WQueen", "WKing", "WBishop", "WKnight", "WPawn"]]
@@ -62,40 +69,82 @@ def get_square_under_mouse(board):  # used to get square under mouse
         return None, None, None
 
 
-def move_diagonal(lis, x, y, end_x):
+def move_diagonal(lis, start_x, start_y, index_x, direction="right to left", index=0):
+    print("DIAGONAL")
     free_spaces = []
     free_spaces_real = []
-    index = 0
+    captured = []
+    can_take = True
+    print(f"index {index}")
     for tile in lis:
+        print(f"tile {tile} lis {lis} free space {free_spaces} captured {captured} can take {can_take}")
+        if direction == "left to right":
+            x = start_x + index
+            y = start_y + index
+        if direction == "right to left":
+            x = start_x - index
+            y = start_y + index
+            free_spaces_real.append([x, y])
         if tile == " ":
-            free_spaces_real.append([end_x - index, y + index])
-            free_spaces.append([index, y])
-        elif free_spaces:
-            if free_spaces[0][0] <= x <= free_spaces[-1][0]:
-                break
-            else:
-                free_spaces = []
+            print("EMPTY TILE")
+            free_spaces_real.append([x, y])
+            free_spaces.append([index, start_y])
+        else:
+            try:
+                if free_spaces[0][0] <= index_x <= free_spaces[-1][0]:
+                    print("DONE")
+                    captured.append([x, y])
+                    break
+                else:
+                    raise IndexError
+            except IndexError:
+                print("RESET")
                 free_spaces_real = []
+                free_spaces = []  # set again if piece not inside
+                captured = []
+                can_take = True
+            if can_take:
+                print("TAKEN")
+                captured.append([x, y])
+                can_take = False
         index += 1
-    if [x, y] in free_spaces:
-        return free_spaces_real
+    print(f"{free_spaces_real} captured {captured}")
+    if [index_x, start_y] in free_spaces or len(free_spaces_real) == 0:
+        free_spaces_real = free_spaces_real + captured
+        return free_spaces_real, captured
 
 
 def move_vertical_horizontal(lis, x, y, direction="horizontal", index=0):
     free_spaces = []  # create list
-    print(lis)
+    captured = []
+    can_take = True
+    print(f"index {index}")
     for tile in lis:  # loops through
-        print(tile)
+        print(f"tile {tile} lis {lis} free space {free_spaces} captured {captured} can take {can_take}")
         if tile == " ":  # if empty add x and y
+            print("EMPTY TILE")
             free_spaces.append([index, y])
-            print(free_spaces)
-        elif free_spaces:  # if piece and not empty
-            if free_spaces[0][0] <= x <= free_spaces[-1][0]:  # check if its inside
-                break
-            else:
-                free_spaces = [] # set again if piece not inside
-        index += 1  # add 1 to index
+        else:  # if piece and not empty
+            try:
+                if free_spaces[0][0] <= x <= free_spaces[-1][0]:  # check if its inside
+                    captured.append([index, y])
+                    break
+                else:
+                    raise IndexError
+            except IndexError:
+                print("RESET")
+                captured = []
+                free_spaces = []  # set again if piece not inside
+                can_take = True
+            if can_take:
+                captured.append([index, y])
+                can_take = False
+        index += 1   # add 1 to index
     print(f"free spaces {free_spaces}")
+    free_spaces = free_spaces + captured
+    print(f"can capture {captured}")
+    #  free_spaces.insert(0, [free_spaces[0][0] - 1, free_spaces[0][1]])
+    #  free_spaces.append([free_spaces[-1][0] + 1, free_spaces[-1][1]])
     if not free_spaces:
         return free_spaces
     if [x, y] in free_spaces:  # check if value in free spaces
@@ -105,7 +154,8 @@ def move_vertical_horizontal(lis, x, y, direction="horizontal", index=0):
                 cor = cor[::-1]
                 free2.append(cor)
             free_spaces = free2
-        return free_spaces  # return
+        start = len(free_spaces) - len(captured)
+        return free_spaces, free_spaces[start::]  # return
 
 
 def where_piece_can_move(piece, pos, board):
@@ -113,6 +163,7 @@ def where_piece_can_move(piece, pos, board):
     row = board[pos[1]]
     diagonal = []
     index_x = 0
+    index_x1 = 0
     # create collum
     for y in range(0, 8):
         collum.append(board[y][pos[0]])
@@ -134,35 +185,99 @@ def where_piece_can_move(piece, pos, board):
                 break
         except IndexError:
             break
-
+    # create diagonal
+    diagonal1 = []
+    start_y1 = pos[1] - pos[0]
+    if start_y1 < 0:
+        start_y1 = 0
+    start_x1 = pos[0] - pos[1]
+    if start_x1 < 0:
+        start_x1 = 0
+    start_x_copy1 = start_x1
+    counter1 = 0
+    for y in range(start_y1, 100):
+        try:
+            diagonal1.append(board[y][start_x1])
+            if start_x1 == pos[0]:
+                index_x1 = counter1
+            start_x1 += 1
+            counter1 += 1
+            if start_x1 > 7:
+                break
+        except IndexError:
+            break
     if piece.NAME[1::] == "Rook":
-        y = move_vertical_horizontal(row, pos[0], pos[1])
-        x = move_vertical_horizontal(collum, pos[1], pos[0], "vertical")
-        return x + y
+        y, cap = move_vertical_horizontal(row, pos[0], pos[1])
+        x, cap1 = move_vertical_horizontal(collum, pos[1], pos[0], "vertical")
+        return x + y, cap + cap1
     elif piece.NAME[1::] == "Queen":
-        y = move_vertical_horizontal(row, pos[0], pos[1])
-        x = move_vertical_horizontal(collum, pos[1], pos[0], "vertical")
-        return x + y
+        # move up and down and diagonal
+        y, cap = move_vertical_horizontal(row, pos[0], pos[1])
+        x, cap1 = move_vertical_horizontal(collum, pos[1], pos[0], "vertical")
+        d1, cap2 = move_diagonal(diagonal, start_x_copy, start_y, index_x)
+        d2, cap3 = move_diagonal(diagonal1,  start_x_copy1, start_y1, index_x1, "left to right")
+        return x + y + d1 + d2, cap + cap1 + cap2 + cap3
     elif piece.NAME[1::] == "King":
-        row = row[(pos[0] - 1):(pos[0] + 2)]
-        collum = collum[(pos[1] - 1):(pos[1] + 2)]
-        y = move_vertical_horizontal(row, pos[0], pos[1], "horizontal", pos[0] - 1)  # starts at the minus pos
-        x = move_vertical_horizontal(collum, pos[1], pos[0], "vertical", pos[1] - 1)  # starts at the minus pos
-        return x + y
+        print(f"collum {collum} row {row}")
+        row = row[max(0, pos[0] - 1):min(7, pos[0] + 2)]
+        collum = collum[max(0, pos[1] - 1):min(8, pos[1] + 2)]
+        print(f"collum {collum} start {max(0, pos[1] - 1)} : end {min(8, pos[1] + 2)}")
+        diagonal = diagonal[max(0, index_x - 1):min(7, index_x + 2)]
+        diagonal1 = diagonal1[(max(0, index_x1 - 1)):min(7, index_x1 + 2)]
+        # move up and down
+        y, cap = move_vertical_horizontal(row, pos[0], pos[1], "horizontal", max(0, pos[0] - 1))  # starts at the minus pos
+        x, cap1 = move_vertical_horizontal(collum, pos[1], pos[0], "vertical", max(0, pos[1] - 1))  # starts at the minus pos
+        # move diagonal
+        d1, cap3 = move_diagonal(diagonal, start_x_copy, start_y, index_x, "right to left", max(0, index_x - 1))
+        d2, cap4 = move_diagonal(diagonal1, start_x_copy1, start_y1, index_x1, "left to right", max(0, index_x1 - 1))
+        return d1 + d2 + x + y, cap + cap1 + cap3 + cap4
+
     elif piece.NAME[1::] == "Bishop":
-        d = move_diagonal(diagonal, index_x, start_y, start_x_copy)
-        return d
+        # move diagonal
+        d1, cap1 = move_diagonal(diagonal, start_x_copy, start_y, index_x)
+        d2, cap2 = move_diagonal(diagonal1, start_x_copy1, start_y1, index_x1, "left to right")
+        return d1 + d2, cap1 + cap2
     elif piece.NAME == "WPawn":
-        # print(f"orig collum {collum} start {pos[1] - 2} end {pos[1]}")
+        # move up and down
         if pos[1] >= 6:
             collum = collum[pos[1] - 2:pos[1] + 1]  # go a bit back so add 1
             offset = 2
         else:
             collum = collum[pos[1] - 1:pos[1] + 1]  # go a bit back
             offset = 1
-        x = move_vertical_horizontal(collum, pos[1], pos[0], "vertical", pos[1] - offset)  # starts back
-        print(f"free spaces {x}")
-        return x
+        # set diagonal
+        print(f"diagonal {diagonal} diagonal 1 {diagonal1}")
+        diagonal = diagonal[max(0, index_x - 1):index_x + 1]
+        diagonal1 = diagonal1[max(0, index_x1 - 1):index_x1 + 1]
+        print(f"start {max(0, index_x1 - 1)} end {index_x1 + 1}")
+        print(f"index {index_x1}")
+        x, cap = move_vertical_horizontal(collum, pos[1], pos[0], "vertical", pos[1] - offset)  # starts back
+        d1, cap2 = move_diagonal(diagonal, start_x_copy, start_y, index_x, "right to left", index_x - 1)
+        d2, cap3 = move_diagonal(diagonal1, start_x_copy1, start_y1, index_x1, "left to right", index_x1 - 1)
+        return x + d1 + d2, cap + cap2 + cap3
+    elif piece.NAME == "BPawn":
+        # move up and down
+        if pos[1] <= 1:
+            collum = collum[pos[1]:pos[1] + 3]  # go a forwards
+        else:
+            collum = collum[pos[1]:pos[1] + 2]  # go a forwards
+        # set diagonal
+        diagonal = diagonal[index_x:index_x + 2]
+        diagonal1 = diagonal1[index_x1:index_x1 + 2]
+        x, cap = move_vertical_horizontal(collum, pos[1], pos[0], "vertical", pos[1])  # starts back
+        d1, cap2 = move_diagonal(diagonal, start_x_copy, start_y, index_x, "right to left", index_x)
+        d2, cap3 = move_diagonal(diagonal1, start_x_copy1, start_y1, index_x1, "left to right", index_x1)
+        return x + d1 + d2, cap + cap2 + cap3
+    elif piece.NAME[1::] == "Knight":
+        # knight all positions
+        x, y = pos
+        li = []
+        capture = []
+        moves = list(product([x - 1, x + 1], [y - 2, y + 2])) + list(product([x - 2, x + 2], [y - 1, y + 1]))
+        for x, y in moves:
+            if 0 <= x < 8 and 0 <= y < 8:
+                li.append([x, y])
+        return li, li
 
 
 # Classes
@@ -212,8 +327,11 @@ class Piece:  # Pieces class has attributes
         self.NAME = name
         self.x = 0
         self.y = 0
-        self.id = 0
         self.pos = None
+        try:
+            self.value = values[name[1::]]
+        except KeyError:
+            self.value = 0
 
     def in_hit_box(self, x1, y1):
         pygame.draw.rect(screen, RED, (self.rect.left, self.rect.top, self.rect.width, self.rect.height))
@@ -283,6 +401,7 @@ def main():  # main loop game
     old_x = 0
     old_y = 0
     coordinates = [[0, 0]]
+    coordinate_captured = []
 
     # init classes
     chessboard = ChessBoard()
@@ -311,7 +430,15 @@ def main():  # main loop game
             pygame.draw.rect(screen, YELLOW, (old_x * TILE_SIZE, old_y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
             # draw dots
             for coordinate in coordinates:
-                pygame.draw.circle(screen, GRAY, tiles_to_pixels((coordinate[0], coordinate[1])), TILE_SIZE / 8)
+                flag = True
+                for cor in coordinate_captured:
+                    if coordinate == cor:
+                        pygame.draw.circle(screen, GRAY, tiles_to_pixels((cor[0], cor[1])), TILE_SIZE / 2,
+                                           int(TILE_SIZE / 10))
+                        flag = False
+                if flag:
+                    pygame.draw.circle(screen, GRAY, tiles_to_pixels((coordinate[0], coordinate[1])), TILE_SIZE / 8)
+
             # draw yellow square
             selected_piece.rect.center = pygame.mouse.get_pos()
             screen.blit(selected_piece.image, (selected_piece.rect.left, selected_piece.rect.top))
@@ -330,13 +457,20 @@ def main():  # main loop game
                     old_y = y
                     selected_piece = board_pieces_class[y][x]
                     board_pieces_names[y][x] = " "
-                    coordinates = where_piece_can_move(selected_piece, (old_x, old_y), board_pieces_names)
+                    coordinates, coordinate_captured = where_piece_can_move(selected_piece, (old_x, old_y)
+                                                                            , board_pieces_names)
             if event.type == pygame.MOUSEBUTTONUP:
                 if hold is True:
-                    board_pieces_names[y][x] = selected_piece.NAME
-                    new_x = x
-                    new_y = y
-                    hold = False
+                    if [x, y] in coordinates:
+                        board_pieces_names[y][x] = selected_piece.NAME
+                        new_x = x
+                        new_y = y
+                        hold = False
+                    else:
+                        hold = False
+                        board_pieces_names[old_y][old_x] = selected_piece.NAME
+                        new_x = old_x
+                        new_y = old_y
         # updating
         pygame.display.update()
 
