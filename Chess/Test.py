@@ -1,3 +1,5 @@
+import random
+
 import pygame
 
 """
@@ -47,7 +49,7 @@ print(knight_moves((2, 2)))
 #print((1,2)[0])
 """
 """
-#a = [2, 3, 4]
+a = [2, 3, 4]
 
 
 def func(t):
@@ -113,9 +115,23 @@ if a[0] < 1 < a[-1]:
     print("WHAT")
 """
 
-a = []
-b = [[4, 6]]
-d = b
-c = d
-print(c)
-a,b = c
+#a = []
+#b = [[4, 6]]
+#d = b
+#c = d
+#print(c)
+#a,b = c
+#
+#x = [[1,2], [2,3], [3,4]]
+#d = [[1,2],[2,3]]#
+#y = x + d
+#print(y)
+
+#li = [1, 2, 3, 4]
+#li[0] = "YES"
+
+#print(li)
+
+#print(random.choice(li))
+print(5%7)
+
