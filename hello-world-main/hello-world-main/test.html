@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="test.css">
+</head>
+    <body>
+        <div>
+            <h1>what is the capital of England?</h1>
+            <button class = "button_design" type = "button">Berlin</button>
+            <button class = "button_design" type = "button">New York</button>
+            <button class = "button_design" type = "button">Paris</button>
+            <button class = "button_design" onclick = "answerCorrect()" type = "button">London</button>
+        </div>
+        <div>
+            <h1>what is the country with the largest coastline?</h1>
+            <button class = "button_design" type = "button">china</button>
+            <button class = "button_design" type = "button">italy</button>
+            <button class = "button_design" type = "button">australia</button>
+            <button class = "button_design" onclick = "answerCorrect()" type = "button">canada</button>
+        </div>
+        <div>
+            <h1>what is the country with the biggest population?</h1>
+            <button class = "button_design" type = "button">india</button>
+            <button class = "button_design" type = "button">japan</button>
+            <button class = "button_design" type = "button">uk</button>
+            <button class = "button_design" onclick = "answerCorrect()" type = "button">china</button>
+        </div>
+        <p id = "demo"></p>
+        <p id = "score"></p>>
+        <script>
+            var score;
+            score = 0
+            function answerCorrect() {
+                score += 1
+                document.getElementById("demo").innerHTML = "Correct"
+                document.getElementById("score").innerHTML = score
+            }
+        </script>
+    </body>
+</html>

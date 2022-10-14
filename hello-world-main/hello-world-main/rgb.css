@@ -1,0 +1,72 @@
+p.block_design {
+    border-radius: 5px;
+    display: inline-block;
+    height: 100px;
+    width: 100px;
+}
+
+.header {
+    position: absolute;
+    display: block;
+    left: 0px;
+    top: 0px;
+    z-index: -1;
+    width: 1500px;
+    height: 150px;
+    background-color: mediumaquamarine;
+    text-align: center;
+
+}
+
+.main_content {
+    position: absolute;
+    display: block;
+    left: 550px;
+    top: 20px;
+    z-index: -1;
+    width: 400px;
+    height: 1000px;
+    background-color: black;
+    text-align: center;
+}
+
+.main_background {
+    position: absolute;
+    display: block;
+    left: 0px;
+    top: 190px;
+    z-index: -1;
+    width: 1500px;
+    height: 1000px;
+    background-color: black ;
+    text-align: center;
+}
+
+.title_text {
+    color: white;
+    font-family: "Copperplate Gothic Light", fantasy;
+}
+
+.button {
+    position: absolute;
+    left:400px;
+    top:155px;
+    font-size:25px;
+    color:mediumaquamarine;
+    background-color: white;
+    border: none;
+}
+
+.button:hover {
+    color:white;
+    background-color: mediumaquamarine;
+}
+
+#displayWin {
+    position: absolute;
+    left:700px;
+    top:130px;
+    font-size:25px;
+    color:mediumaquamarine;
+    background-color: white;
+}

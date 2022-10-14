@@ -1,0 +1,77 @@
+.operator {
+    background-color: lightgray;
+    padding: 10px;
+    font-size: 20px;
+    border-style: solid;
+    border-color: darkgray;
+}
+
+.operator:hover {
+    box-shadow: 0 0 2px 1px darkgrey;
+}
+
+.operator:active {
+    font-weight: bold;
+}
+
+.number {
+    padding: 10px;
+    font-size: 20px;
+    border-style: solid;
+    border-color: lightgrey;
+    border-width: 1px;
+}
+
+.number:hover {
+    box-shadow: 0 0 2px 1px lightgrey;
+}
+
+.number:active{
+    font-weight: bold;
+}
+
+#container {
+    position: absolute;
+    border-style: solid;
+    border-width: 3px;
+    border-color: whitesmoke;
+    box-shadow: 0 0 2px 1px gainsboro;
+    display: grid;
+    grid-template-columns: 70px 70px 70px 70px;
+    top: 200px;
+    left: 200px;
+    grid-gap: 5px;
+    padding: 10px;
+}
+
+.equal {
+    padding: 10px;
+    font-size: 20px;
+    background-color: lightblue;
+    border-style: solid;
+    border-color: lightblue;
+    border-width: 1px;
+    grid-area: 3 / 4 / 7 / 4;
+}
+
+.equal:hover {
+    box-shadow: 0 0 2px 1px lightskyblue;
+}
+
+.equal:active{
+    font-weight: bold;
+}
+
+/* start row/ start column/ end row/ end column/ */
+
+#screen {
+    overflow: auto;
+    background-color: white;
+    font-size: 30px;
+    border-style: solid;
+    border-color: whitesmoke;
+    border-width: 1px;
+    box-shadow: 0 0 2px 1px gainsboro;
+    height:60px;
+    grid-area: 1 / 1 / 1 / 5;
+}

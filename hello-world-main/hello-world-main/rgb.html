@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>The great RGB guessing game</title>
+    <link rel="stylesheet" href="rgb.css"/>
+</head>
+<body>
+    <div class = "header">
+        <h3 class = "title_text">THE GREAT</h3>
+        <h1 class = "title_text" id = "rgb_find"></h1>
+        <h3 class = "title_text">GUESSING GAME</h3>
+    </div>
+    <button onclick = "resetColors()" class = "button">New Colors</button>
+    <p id = "displayWin"></p>
+    <div class = "main_background">
+        <div class = "main_content">
+            <p onclick = "check(this)" id = "block_1" class = "block_design" style = "background-color: black;">block_1</p>
+            <p onclick = "check(this)" id = "block_2" class = "block_design" style = "background-color: black;">block_2</p>
+            <p onclick = "check(this)" id = "block_3" class = "block_design" style = "background-color: black;">block_3</p>
+            <p onclick = "check(this)" id = "block_4" class = "block_design" style = "background-color: black;">block_4</p>
+            <p onclick = "check(this)" id = "block_5" class = "block_design" style = "background-color: black;">block_5</p>
+            <p onclick = "check(this)" id = "block_6" class = "block_design" style = "background-color: black;">block_6</p>
+        </div>
+    </div>
+
+    <h1 id = "end"></h1>
+
+</body>
+<footer>
+    <script src="rgb.js"></script>
+</footer>
+</html>

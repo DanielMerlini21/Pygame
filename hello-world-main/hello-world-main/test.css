@@ -1,0 +1,12 @@
+.button_design {
+    color: dimgray;
+    background-color: lightblue;
+    border-style: solid;
+    border-width: 3px;
+    border-color: darkblue;
+}
+
+.button_design:hover {
+    background-color: green;
+    color: white;
+}
