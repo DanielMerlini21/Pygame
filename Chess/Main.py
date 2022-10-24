@@ -3,7 +3,6 @@
 
 # imports the modules
 import random
-
 import pygame
 import os
 import copy
@@ -36,7 +35,7 @@ BOARD_POS = (0, 0)
 values = {"King": 900, "Queen": 9, "Rook": 5, "Bishop": 3, "Knight": 3, "Pawn": 1}
 
 # variables
-white_move = "W"
+color_turn = "W"
 board_pieces_names = [["BRook", "BKnight", "BBishop", "BQueen", "BKing", "BBishop", "BKnight", "BRook"],
                       ["BPawn", "BPawn", "BPawn", "BPawn", "BPawn", "BPawn", "BPawn", "BPawn"],
                       [" ", " ", " ", " ", " ", " ", " ", " "],
@@ -51,6 +50,18 @@ screen = pygame.display.set_mode((WIDTH, HEIGHT))
 
 
 # Functions
+def set_up_pieces(board_names, piece, images_dict):
+    board_pieces_class = []
+    for row in board_names:
+        board_pieces_class.append([])
+        for tile in row:
+            if tile != " ":
+                board_pieces_class[-1].append(piece(images_dict[tile], tile))
+            else:
+                board_pieces_class[-1].append(" ")
+    return board_pieces_class
+
+
 def tiles_to_pixels(tiles_cor, offset=(0, 0)):  # gets the coordinates of tiles into pixels
     offset_x, offset_y = offset  # tuple unpacking offset into x and y
     row, collum = tiles_cor  # tuple unpacking tiles into row and collum
@@ -77,21 +88,6 @@ def all_possible_moves(board, board1, color):
     return all_cor
 
 
-def all_color_pieces(color, board):
-    same_color_pieces = []
-    row_counter = 0
-    tile_counter = 0
-    for row in board:
-        for tile in row:
-            if tile != " ":
-                if tile.NAME[0] == color:
-                    same_color_pieces.append([tile, [tile_counter, row_counter]])
-            tile_counter = tile_counter % (WIDTH_IN_TILES - 1)
-            tile_counter += 1
-        row_counter += 1
-    return same_color_pieces
-
-
 def get_square_under_mouse(board):  # used to get square under mouse
     mouse_pos = pygame.Vector2(pygame.mouse.get_pos()) - pygame.Vector2(BOARD_POS)  # minus offset
     v, v1 = mouse_pos  # gets mouse position
@@ -109,6 +105,7 @@ def move_diagonal(lis, start_x, start_y, index_x, direction="right to left", ind
     free_spaces_real = []
     captured = []
     can_take = True
+    real_y = None
     for tile in lis:
         if direction == "left to right":
             x = start_x + index
@@ -116,16 +113,18 @@ def move_diagonal(lis, start_x, start_y, index_x, direction="right to left", ind
         if direction == "right to left":
             x = start_x - index
             y = start_y + index
-            free_spaces_real.append([x, y])
-        if tile == " ":
+        if index_x == index:
+            real_y = y
+            real_x = x
+        if tile == " " or index_x == index:
             free_spaces_real.append([x, y])
             free_spaces.append([index, start_y])
         else:
             try:
                 if free_spaces[0][0] <= index_x <= free_spaces[-1][0]:
-                    if white_move == tile[0]:
+                    if color_turn != tile.NAME[0]:
                         captured.append([x, y])
-                        break
+                    break
                 else:
                     raise IndexError
             except IndexError:
@@ -133,13 +132,13 @@ def move_diagonal(lis, start_x, start_y, index_x, direction="right to left", ind
                 free_spaces = []  # set again if piece not inside
                 captured = []
                 can_take = True
-            print(f"white mooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooove {white_move}")
-            if can_take and white_move == tile[0]:
+            if can_take and color_turn != tile.NAME[0]:
                 captured.append([x, y])
                 can_take = False
         index += 1
     if [index_x, start_y] in free_spaces or len(free_spaces_real) == 0:
         free_spaces_real = free_spaces_real + captured
+        free_spaces_real = [cor for cor in free_spaces_real if cor != [real_x, real_y]]
         return free_spaces_real, captured
 
 
@@ -147,14 +146,14 @@ def move_vertical_horizontal(lis, x, y, direction="horizontal", index=0):
     free_spaces = []  # create list
     captured = []
     can_take = True
+    # (f"lis {lis}")
     for tile in lis:  # loops through
-        # print(f"tile {tile } lis {lis} index {index} x,y{x,y}")
-        if tile == " ":  # if empty add x and y
+        if tile == " " or x == index:  # if empty add x and y
             free_spaces.append([index, y])
         else:  # if piece and not empty
             try:
                 if free_spaces[0][0] <= x <= free_spaces[-1][0]:  # check if its inside
-                    if white_move == tile[0]:
+                    if color_turn != tile.NAME[0]:
                         captured.append([index, y])
                     break
                 else:
@@ -163,7 +162,8 @@ def move_vertical_horizontal(lis, x, y, direction="horizontal", index=0):
                 captured = []
                 free_spaces = []  # set again if piece not inside
                 can_take = True
-            if can_take and white_move == tile[0]:
+            # (f"Tile: {tile}")
+            if can_take and color_turn != tile.NAME[0]:
                 captured.append([index, y])
                 can_take = False
         index += 1  # add 1 to index
@@ -173,6 +173,7 @@ def move_vertical_horizontal(lis, x, y, direction="horizontal", index=0):
     if not free_spaces:
         return free_spaces
     if [x, y] in free_spaces:  # check if value in free spaces
+        free_spaces = [cor for cor in free_spaces if cor != [x, y]]
         if direction == "vertical":  # flip
             free2 = []
             for cor in free_spaces:
@@ -231,17 +232,18 @@ def where_piece_can_move(piece, pos, board):
                 break
         except IndexError:
             break
+    # (f"row {row} collum {collum}")
     if piece.NAME[1::] == "Rook":
         y, cap = move_vertical_horizontal(row, pos[0], pos[1])
         x, cap1 = move_vertical_horizontal(collum, pos[1], pos[0], "vertical")
-        return x + y, cap + cap1
+        return x + y, cap1 + cap
     elif piece.NAME[1::] == "Queen":
         # move up and down and diagonal
         y, cap = move_vertical_horizontal(row, pos[0], pos[1])
         x, cap1 = move_vertical_horizontal(collum, pos[1], pos[0], "vertical")
         d1, cap2 = move_diagonal(diagonal, start_x_copy, start_y, index_x)
         d2, cap3 = move_diagonal(diagonal1, start_x_copy1, start_y1, index_x1, "left to right")
-        return x + y + d1 + d2, cap + cap1 + cap2 + cap3
+        return y + x + d1 + d2, cap + cap1 + cap2 + cap3
     elif piece.NAME[1::] == "King":
         row = row[max(0, pos[0] - 1):min(7, pos[0] + 2)]
         collum = collum[max(0, pos[1] - 1):min(8, pos[1] + 2)]
@@ -255,7 +257,7 @@ def where_piece_can_move(piece, pos, board):
         # move diagonal
         d1, cap3 = move_diagonal(diagonal, start_x_copy, start_y, index_x, "right to left", max(0, index_x - 1))
         d2, cap4 = move_diagonal(diagonal1, start_x_copy1, start_y1, index_x1, "left to right", max(0, index_x1 - 1))
-        return d1 + d2 + x + y, cap + cap1 + cap3 + cap4
+        return y + x + d1 + d2, cap + cap1 + cap3 + cap4
 
     elif piece.NAME[1::] == "Bishop":
         # move diagonal
@@ -276,6 +278,8 @@ def where_piece_can_move(piece, pos, board):
         x, cap = move_vertical_horizontal(collum, pos[1], pos[0], "vertical", pos[1] - offset)  # starts back
         d1, cap2 = move_diagonal(diagonal, start_x_copy, start_y, index_x, "right to left", max(0, index_x - 1))
         d2, cap3 = move_diagonal(diagonal1, start_x_copy1, start_y1, index_x1, "left to right", max(0, index_x1 - 1))
+        if x == cap:
+            x = []
         return x + cap2 + cap3, cap2 + cap3
     elif piece.NAME == "BPawn":
         # move up and down
@@ -289,6 +293,9 @@ def where_piece_can_move(piece, pos, board):
         x, cap = move_vertical_horizontal(collum, pos[1], pos[0], "vertical", pos[1])  # starts back
         d1, cap2 = move_diagonal(diagonal, start_x_copy, start_y, index_x, "right to left", index_x)
         d2, cap3 = move_diagonal(diagonal1, start_x_copy1, start_y1, index_x1, "left to right", index_x1)
+        # print(x, cap)
+        if cap:
+            x = [cor for cor in x if cor != cap[0]]
         return x + cap2 + cap3, cap2 + cap3
     elif piece.NAME[1::] == "Knight":
         # knight all positions
@@ -303,11 +310,59 @@ def where_piece_can_move(piece, pos, board):
         for tile in li:
             pie = board[tile[1]][tile[0]]
             if pie != " ":
-                if pie[0] == white_move:
+                if pie.NAME[0] != color_turn:
                     capture.append(tile)
                 else:
                     li.remove(tile)
         return li, capture
+
+
+def all_color_pieces(color, board):
+    same_color_pieces = []
+    row_counter = 0
+    tile_counter = 0
+    piece = Piece(pygame.Surface((0, 0)), "test")
+    highest_value = 0
+    for row in board:
+        for tile in row:
+            if tile != " ":
+                if tile.NAME[0] == color:
+                    all_cor, all_cap = where_piece_can_move(tile, (tile_counter, row_counter),
+                                                            board)  # piece pos board
+                    if all_cor:
+                        for cor in all_cor:
+                            if board[cor[1]][cor[0]] != " ":
+                                # (f"{board[cor[1]][cor[0]]} > {highest_value}")
+                                if board[cor[1]][cor[0]].value > highest_value:  # go through board
+                                    highest_value = board[cor[1]][cor[0]].value
+                                    highest_value_set = [tile, [cor, highest_value], [tile_counter, row_counter]]
+                            else:
+                                if highest_value == 0:
+                                    highest_value_set = [tile, [cor, highest_value], [tile_counter, row_counter]]
+
+                    same_color_pieces.append([tile, [tile_counter, row_counter]])
+            tile_counter += 1
+            tile_counter = tile_counter % WIDTH_IN_TILES
+        row_counter += 1
+    return same_color_pieces, highest_value_set
+
+
+def minimax(node, depth, maximizing_player):
+    if depth == 0:  # when depth reaches zero then start finding values
+        pass  # return the heuristic value of node
+    if maximizing_player:  # tries to get the highest value White
+        value = -99999999999
+        where_piece_can_move(child, )
+        for child in node:
+            new_depth = depth - 1
+            value = max(minimax(child, new_depth, False))
+        return value
+    else:  # (* minimizing player *) Black
+        value = 999999999999
+        for child in node:  # tries to get the lowest value
+            new_depth = depth - 1
+            value = min(minimax(child, new_depth, True))
+        return value
 
 
 # Classes
@@ -331,6 +386,7 @@ class SpriteSheet:  # cuts up sprite sheet and saves them
         pieces_names = ["BKing", "BQueen", "BRook", "BBishop", "BKnight", "BPawn",
                         "WKing", "WQueen", "WRook", "WBishop", "WKnight", "WPawn"]
         pieces1 = []
+        pieces1_dict = {}
         directory = os.getcwd()
         file_path = os.path.join(directory, "images", "chess pieces.png")
         done = "Null"
@@ -344,10 +400,10 @@ class SpriteSheet:  # cuts up sprite sheet and saves them
                     done = True
             image.blit(self.sprite_sheet, (0, 0), (x1, y1, self.WIDTH, self.HEIGHT))
             image = pygame.transform.scale(image, (self.WIDTH * (TILE_SIZE / 100), self.HEIGHT * (TILE_SIZE / 100)))
-            pieces1.append(self.piece(image, pieces_names[i - 1]))
+            pieces1_dict[pieces_names[i - 1]] = image
             image.set_colorkey(self.COLOR_KEY)
             x1 += self.PADDING_X + self.WIDTH
-        return pieces1
+        return pieces1_dict
 
 
 class Piece:  # Pieces class has attributes
@@ -357,19 +413,18 @@ class Piece:  # Pieces class has attributes
         self.NAME = name
         self.x = 0
         self.y = 0
-        self.pos = None
+        self.pos = " "
+        self.offset_x, self.offset_y = BOARD_POS
+        self.index = [0, 0]
         try:
             self.value = values[name[1::]]
         except KeyError:
             self.value = 0
 
-    def in_hit_box(self, x1, y1):
-        pygame.draw.rect(screen, RED, (self.rect.left, self.rect.top, self.rect.width, self.rect.height))
-        if self.rect.left < x1 < self.rect.right and self.rect.top < y1 < self.rect.bottom:
-            return True
-
     def update(self):
-        screen.blit(self.image, (self.rect.left, self.rect.top))
+        self.rect.center = (self.offset_x + self.index[0] * TILE_SIZE + TILE_SIZE / 2,
+                            self.offset_y + self.index[1] * TILE_SIZE + TILE_SIZE / 2)
+        screen.blit(self.image, self.rect.topleft)
 
 
 class ChessBoard:  # Class in control board
@@ -402,25 +457,10 @@ class ChessBoard:  # Class in control board
             dark = not dark
         return board_surf
 
-    def update_board(self, board1, pieces1, screen1):
-        offset_x, offset_y = BOARD_POS
-        copy_board1 = copy.deepcopy(board1)
-        for row1 in copy_board1:
-            for entity in row1:
-                for piece1 in pieces1:
-                    if piece1.NAME == entity:
-                        collum = row1.index(entity)
-                        row2 = copy_board1.index(row1)
-                        object_piece = self.piece(piece1.image, piece1.NAME)
-                        object_piece.rect.center = (offset_x + collum * self.SIZE_OF_TILES + self.SIZE_OF_TILES / 2,
-                                                    offset_y + row2 * self.SIZE_OF_TILES + self.SIZE_OF_TILES / 2)
-                        screen1.blit(object_piece.image, object_piece.rect.topleft)
-                        copy_board1[row2][collum] = object_piece
-        return copy_board1
-
+# function that didn't work at the top
 
 def main():  # main loop game
-    global white_move
+    global color_turn
     # initialising pygame
     pygame.init()
     clock = pygame.time.Clock()
@@ -441,18 +481,26 @@ def main():  # main loop game
     selected_piece = Piece(pygame.Surface((0, 0)), "Start")
 
     # use methods
-    pieces_list = sprite_sheet.load_images()
+    pieces_dict = sprite_sheet.load_images()
     board_surf = chessboard.create_board()
+
+    # use functions
+    board_pieces_class = set_up_pieces(board_pieces_names, Piece, pieces_dict)
+    # board_names, piece, images_dict
     # main loop
     while running:
         # Drawing
-        piece, x, y = get_square_under_mouse(board_pieces_names)
+        piece, x, y = get_square_under_mouse(board_pieces_class)
         screen.blit(board_surf, BOARD_POS)
 
         if not hold:
             pygame.draw.rect(screen, YELLOW, (new_x * TILE_SIZE, new_y * TILE_SIZE, TILE_SIZE, TILE_SIZE))
 
-        board_pieces_class = chessboard.update_board(board_pieces_names, pieces_list, screen)
+        for row in board_pieces_class:
+            for tile in row:
+                if tile != " ":
+                    tile.index = [row.index(tile), board_pieces_class.index(row)]
+                    tile.update()
 
         if x is not None:
             rect = (BOARD_POS[0] + x * TILE_SIZE, BOARD_POS[1] + y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
@@ -478,58 +526,45 @@ def main():  # main loop game
         # keep running at the at the right speed
         clock.tick(FPS)
         # process input (events)
-        # print(white_move)
-        if white_move == "W":
+        if color_turn == "W":
             for event in pygame.event.get():
                 # check for closing the window
                 if event.type == pygame.QUIT:
                     running = False
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     selected_piece = board_pieces_class[y][x]
-                    if piece != " " and hold is False and selected_piece.NAME[0] == white_move:
+                    if piece != " " and hold is False and selected_piece.NAME[0] == color_turn:
+                        print("HUMAN")
                         hold = True
                         old_x = x
                         old_y = y
-                        board_pieces_names[y][x] = " "
+                        board_pieces_class[y][x] = " "
                         coordinates, coordinate_captured = where_piece_can_move(selected_piece, (old_x, old_y)
-                                                                                , board_pieces_names)
-                        try:
-                            coordinates.remove([old_x, old_y])
-                        except ValueError:
-                            print("Knight")
+                                                                                , board_pieces_class)
                 if event.type == pygame.MOUSEBUTTONUP:
                     if hold is True:
                         if [x, y] in coordinates:
-                            if white_move == "W":
-                                white_move = "B"
-                            board_pieces_names[y][x] = selected_piece.NAME
+                            if color_turn == "W":
+                                color_turn = "B"
+                            board_pieces_class[y][x] = selected_piece
                             new_x = x
                             new_y = y
                             hold = False
                         else:
                             hold = False
-                            board_pieces_names[old_y][old_x] = selected_piece.NAME
+                            board_pieces_class[old_y][old_x] = selected_piece
                             new_x = old_x
                             new_y = old_y
-        if white_move == "B":  # board, board1, color
-            # cor = all_possible_moves(board_pieces_class, board_pieces_names, white_move)
-            # move = random.randrange(0, len(cor))
-            all_pieces_same_color = all_color_pieces(white_move, board_pieces_class)
-            pie = random.choice(all_pieces_same_color)
-            print(f" x, y{pie[1][0], pie[1][1]}")
-            board_pieces_names[pie[1][1]][pie[1][0]] = " "
-            coordinates_bot, coordinate_captured_bot = where_piece_can_move(pie[0], (pie[1][0], pie[1][1])
-                                                                    , board_pieces_names)
-            try:\
-                coordinates_bot.remove([pie[1][0], pie[1][1]])
-            except ValueError:
-                print("Knight")
-            print(f"coordinates_bot {coordinates_bot} captured {coordinate_captured_bot}")
-            coordinates_bot = [x for x in coordinates_bot if x not in coordinate_captured_bot]
-            print(f"coordinates_bot {coordinates_bot}")
-            move = random.choice(coordinates_bot)
-            board_pieces_names[move[1]][move[0]] = pie[0].NAME
-            white_move = "W"
+
+        if color_turn == "B":  # board, board1, color
+            #print("BOT")
+            all_pieces_same_color, highest_value_move = all_color_pieces(color_turn, board_pieces_class)
+            #print(
+            #    f"piece {highest_value_move[0].NAME} coordinates and points {highest_value_move[1]} original pos {highest_value_move[2]}")
+            #  print(f"highest value move {highest_value_move[0].NAME}")
+            board_pieces_class[highest_value_move[2][1]][highest_value_move[2][0]] = " "
+            board_pieces_class[highest_value_move[1][0][1]][highest_value_move[1][0][0]] = highest_value_move[0]
+            color_turn = "W"
         # updating
         pygame.display.update()
 
