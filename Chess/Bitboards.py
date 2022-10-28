@@ -2,12 +2,12 @@ piece_positions = ["R", "N", "B", "Q", "K", "B", "B", "B",
                   "P", "P", "P", "P", "P", "P", "P", "P",
                   " ", " ", " ", " ", " ", " ", " ", " ",
                   " ", " ", " ", " ", " ", " ", " ", " ",
-                  " ", " ", " ", " ", " ", " ", " ", " ",
+                  " ", " ", " ", " ", "k", " ", " ", " ",
                   " ", " ", " ", " ", " ", " ", " ", " ",
                   "p", "p", "p", "p", "p", "p", "p", "p",
-                  "r", "n", "b", "q", "k", "b", "n", "r"]
+                  "r", "n", "b", "q", " ", "b", "n", "r"]
 
-king_binaryshift = [9, 8, 7, 1, -9, -8, -7, -1]
+king_binaryshift = [9, 8, 7, 1]
 
 def bitboards(chess_board, piece_name):
     # creates bitboards required
@@ -33,8 +33,9 @@ def bitboards(chess_board, piece_name):
     return bitboards
 
 def print_bitboard(bitboard):
-    board = '{:064b}'.format(bitboard) # :064b used to remove b0
+    board = '{:064b}'.format(bitboard) # :064b used to remove b and into binary
     board = str(board).zfill(64)
+    print(board)
     for i in range(7, -1, -1): # goes opposite little endian encoding (smaller to larger)
         print(board[8*i+7] + " " + board[8*i+6] + " " + board[8*i+5] + " " + 
               board[8*i+4] + " " + board[8*i+3] + " " + board[8*i+2] + " " + 
@@ -43,12 +44,14 @@ def print_bitboard(bitboard):
 def where_piece_can_move(chess_board, piece_name):
     # check where piece can move
     bitboards_dict = bitboards(chess_board, piece_name) # returns all the bitboards required
-    print_bitboard(bitboards_dict["k"])
     # goes through each piece
     if piece_name == "k":
         # binary shift : **2 moves right **1/2 moves left 1 space
         # rose compass
+        king_moves = 0 
         for shift in king_binaryshift:
+            king_moves = king_moves | int(bitboards_dict["k"] * (2**(shift))) | int(bitboards_dict["k"] * (2**(1/shift)))
+        print_bitboard(king_moves)
                             
 where_piece_can_move(piece_positions, "k")
             
