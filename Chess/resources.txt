@@ -1,0 +1,5 @@
+XOR
+https://www.scaler.com/topics/xor-in-python/
+
+position of pieces
+https://chess.stackexchange.com/questions/39956/is-it-worth-it-to-use-a-redundant-mailbox-representation-in-addition-to-bitboard
